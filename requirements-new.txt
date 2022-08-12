@@ -10,12 +10,12 @@ glfw==2.4.0
 google-auth==2.3.3
 google-auth-oauthlib==0.4.6
 grpcio==1.42.0
-gym==0.21.0
+gym==0.25.0 #0.21.0
 idna==3.3
 imageio==2.13.3
 importlib-metadata==4.8.2
 Markdown==3.3.6
-mujoco-py==2.1.2.14
+mujoco==2.1.5 #mujoco-py==2.1.2.14
 numpy==1.21.4
 oauthlib==3.1.1
 Pillow==8.4.0
@@ -31,9 +31,9 @@ six==1.16.0
 tensorboard==2.7.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.0
-torch==1.10.0+cu113
-torchaudio==0.10.0+cu113
-torchvision==0.11.1+cu113
+torch==1.10.0 #+cu113
+torchaudio==0.10.0 #+cu113
+torchvision==0.11.1 #+cu113
 typing-extensions==4.0.1
 urllib3==1.26.7
 Werkzeug==2.0.2
