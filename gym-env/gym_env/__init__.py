@@ -20,4 +20,13 @@ register(
     entry_point='gym_env.envs:PegInHoleRandomEventsDepth',
 ) 
 
+register(
+    id='PegInHole-rand_events_depth_activity_center',
+    entry_point='gym_env.envs:PegInHoleRandomEventsDepthActivityCenter',
+) 
+
+register(
+    id='PegInHole-rand_events_visual_servoing',
+    entry_point='gym_env.envs:PegInHoleRandomEventsVisualServoing',
+) 
 

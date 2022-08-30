@@ -2,3 +2,7 @@ from gym_env.envs.PegInHole_CIC_env import PegInHole
 from gym_env.envs.PegInHole_CIC_env_rand import PegInHoleRandom
 from gym_env.envs.PegInHole_CIC_env_rand_events import PegInHoleRandomEvents
 from gym_env.envs.PegInHole_CIC_env_rand_events_depth import PegInHoleRandomEventsDepth
+from gym_env.envs.PegInHole_CIC_env_rand_events_depth_activity_center import PegInHoleRandomEventsDepthActivityCenter
+from gym_env.envs.PegInHole_CIC_env_rand_events_visual_servoing import PegInHoleRandomEventsVisualServoing
+
+

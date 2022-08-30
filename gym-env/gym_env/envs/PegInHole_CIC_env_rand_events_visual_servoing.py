@@ -13,8 +13,9 @@ import gym
 import cv2
 import skimage.measure
 import time
+from scipy.spatial import distance_matrix
 
-class PegInHoleRandomEventsDepth(gym.Env):
+class PegInHoleRandomEventsVisualServoing(gym.Env):
 
     def __init__(self, sim_speed=32, headless=False, render_every_frame=True):
         
@@ -57,10 +58,13 @@ class PegInHoleRandomEventsDepth(gym.Env):
         # self.current_pose = np.array([0.0 ,0.6,0.05, 3.14, 0, 0]) # inside the hole
         # self.goal_pose = np.array([0.0, 0.6, 0.02, 3.14, 0, 0])
 
+        self.goal_img = np.ones((32, 32)) * 127
+
         self.err_limit = 0.0005
 
         self.max_steps = 1
         self.current_step = 0
+        self.old_a = 0
 
         # gym spaces
         position_ac = 3
@@ -77,9 +81,10 @@ class PegInHoleRandomEventsDepth(gym.Env):
 
         img_shape = 32 , 32
         img_pixels = 32*32
+        img_dist = 1
         # self.image_observation_space = gym.spaces.Box(low=0, high=255, shape=img_shape, dtype=np.uint8)
 
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(state + img_pixels,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(state + img_dist,), dtype=np.float32)
 
         # self.observation_space = gym.spaces.Tuple([self.state_observation_space, 
         #                                         self.image_observation_space])
@@ -93,11 +98,8 @@ class PegInHoleRandomEventsDepth(gym.Env):
         self.ob_linear_force_scale = 1000
         self.ob_rotation_force_scale = 1000
         self.ob_image_scale = 255.0
-
-        # for i in range(5):
-        #     self.viewer.make_current()
-        #     self.viewer.render(overlay_on=False)
-        #     time.sleep(1)
+        self.ob_img_dist_scale = 1000
+        
 
     def step(self, action):
         
@@ -153,7 +155,7 @@ class PegInHoleRandomEventsDepth(gym.Env):
         #     reward = 0
 
 
-        depth = self.controller.fk()[2]
+        # depth = self.controller.fk()[2]
 
 
         # w2 = 10
@@ -162,14 +164,17 @@ class PegInHoleRandomEventsDepth(gym.Env):
         # reward =  w2*(depth_error)
 
 
-        err = abs(0.02 - depth )
-        # reward = 1/(2*err+0.001)-5*(err+0.001)-5
+        # err = abs(0.02 - depth )
+        # # reward = 1/(2*err+0.001)-5*(err+0.001)-5
 
         f = np.linalg.norm(observation[6:9])
         dx = np.linalg.norm(action - self.old_a)
         self.old_a = action.copy()
-        reward = 1/(2*err+0.001)-5*(err+0.001)-5 -0.01 * f - 5* dx
+        # reward = 1/(2*err+0.001)-5*(err+0.001)-5 -0.01 * f - 5* dx
 
+        img = observation[12:].reshape(32,32)
+        err = self.dist_metric(self.goal_img, img)
+        reward = 1/(2*err+0.001)-5*(err+0.001)-5 -0.01 * f - 5* dx
         # print(reward)
 
         # ======== done condition ==========
@@ -230,10 +235,14 @@ class PegInHoleRandomEventsDepth(gym.Env):
             e_img, e = out
             img_observation = self.preprocessing(e_img)
 
-        img_observation = img_observation / (self.ob_image_scale / 2.0) - 1
+        # img_observation = img_observation / (self.ob_image_scale / 2.0) - 1
+
+
+
+        img_dist = self.dist_metric(goal_img, img_observation) / self.ob_img_dist_scale
 
         # observation = [state_observation, img_observation]
-        observation = np.append(state_observation, img_observation.flatten())
+        observation = np.append(state_observation, img_dist)
 
         return observation.clip(-1, 1)
 
@@ -318,3 +327,22 @@ class PegInHoleRandomEventsDepth(gym.Env):
         # cv2.waitKey(0)
 
         return img
+
+    def dist_metric(self, goal_img, img):
+        px, py = np.where(img == 0)
+        nx, ny = np.where(img == 255)
+        x = np.append(nx, px)
+        y = np.append(ny, py)
+        c = np.append(x[:, None], y[:,None], axis=1)
+        
+        gpx, gpy = np.where(goal_img == 0)
+        gnx, gny = np.where(goal_img == 255)
+        gx = np.append(gnx, gpx)
+        gy = np.append(gny, gpy)
+        gc = np.append(gx[:, None], gy[:,None], axis=1)
+        
+        dist_mat = distance_matrix(c, gc)
+        
+        self_dist_mat = distance_matrix(gc, gc)
+        
+        return dist_mat.flatten().sum() - self_dist_mat.flatten().sum()

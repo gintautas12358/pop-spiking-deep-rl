@@ -4,7 +4,10 @@ import gym_env
 # env = gym.make("PegInHole-v0")
 # env = gym.make("PegInHole-rand")
 # env = gym.make("PegInHole-rand_events")
-env = gym.make("PegInHole-rand_events_depth")
+# env = gym.make("PegInHole-rand_events_depth")
+
+env = gym.make("PegInHole-rand_events_visual_servoing")
+
 
 
 
@@ -18,7 +21,7 @@ while not done:
     obs, reward, done, info = env.step(action)
     step += 1
     # print("obs", obs, "reward", reward, "done", done, "info", info)
-    print("obs", obs[0][6:])
+    # print("obs", obs[0][6:])
 
     # print(step)
 

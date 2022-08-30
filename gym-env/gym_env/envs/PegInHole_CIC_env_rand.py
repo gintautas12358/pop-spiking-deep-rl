@@ -46,10 +46,10 @@ class PegInHoleRandom(gym.Env):
         self.set_hole_pose(offset_pos)
 
 
-        self.current_pose = np.array([0.0, 0.63, 0.20, 3.14, 0, 0])
+        self.current_pose = np.array([0.0, 0.63, 0.10, 3.14, 0, 0])
         # self.current_pose = np.array([0.0 ,0.6,0.20, 3.14, 0, 0])  # on top of the hole
         # self.current_pose = np.array([0.0 ,0.6,0.15, 3.14, 0, 0]) # inside the hole
-        self.goal_pose = np.array([0.0, 0.6, 0.12, 3.14, 0, 0])
+        self.goal_pose = np.array([0.0, 0.6, 0.02, 3.14, 0, 0])
         self.goal_pose[:3] += offset_pos
 
         self.err_limit = 0.0005

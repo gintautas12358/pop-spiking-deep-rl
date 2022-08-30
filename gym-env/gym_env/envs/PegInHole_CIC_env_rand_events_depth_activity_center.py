@@ -52,10 +52,13 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
         offset_pos[2] = 0.0                     # no offset in z
         self.set_hole_pose(offset_pos)
 
-        self.current_pose = np.array([0.0, 0.63, 0.20, 3.14, 0, 0])
+        self.current_pose = np.array([0.0, 0.63, 0.10, 3.14, 0, 0])
         # self.current_pose = np.array([0.0 ,0.6,0.20, 3.14, 0, 0])  # on top of the hole
         # self.current_pose = np.array([0.0 ,0.6,0.15, 3.14, 0, 0]) # inside the hole
         # self.goal_pose = np.array([0.0, 0.6, 0.12, 3.14, 0, 0])
+
+        self.last_ac = [0, 0]
+        self.old_a = 0
 
         self.err_limit = 0.0005
 
@@ -77,9 +80,10 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
 
         img_shape = 32 , 32
         img_pixels = 32*32
+        activity_coords = 2
         # self.image_observation_space = gym.spaces.Box(low=0, high=255, shape=img_shape, dtype=np.uint8)
 
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(state + img_pixels,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(state + activity_coords,), dtype=np.float32)
 
         # self.observation_space = gym.spaces.Tuple([self.state_observation_space, 
         #                                         self.image_observation_space])
@@ -93,6 +97,7 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
         self.ob_linear_force_scale = 1000
         self.ob_rotation_force_scale = 1000
         self.ob_image_scale = 255.0
+        self.ob_activity_coords_scale = 32
 
         # for i in range(5):
         #     self.viewer.make_current()
@@ -162,8 +167,15 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
         # reward =  w2*(depth_error)
 
 
-        err = abs(0.12 - depth )
-        reward = 1/(2*err+0.001)-5*(err+0.001)-5
+        err = abs(0.02 - depth )
+        # reward = 1/(2*err+0.001)-5*(err+0.001)-5
+
+
+        # err = np.linalg.norm(self.goal_pose[:3] - self.controller.fk()[:3])
+        f = np.linalg.norm(observation[6:9])
+        dx = np.linalg.norm(action - self.old_a)
+        self.old_a = action.copy()
+        reward = 1/(2*err+0.001)-5*(err+0.001)-5 -0.01 * f - 5* dx
 
         # print(reward)
 
@@ -225,10 +237,19 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
             e_img, e = out
             img_observation = self.preprocessing(e_img)
 
-        img_observation = img_observation / (self.ob_image_scale / 2.0) - 1
+        # img_observation = img_observation / (self.ob_image_scale / 2.0) - 1
+
+
+        
+
+        activity_coords = self.last_ac
+        out2 = self.get_activity_coord(img_observation)
+        if out is not None:
+            activity_coords = np.array(out2)
+            self.last_ac = (activity_coords / (self.ob_activity_coords_scale / 2.0) ) - 1
 
         # observation = [state_observation, img_observation]
-        observation = np.append(state_observation, img_observation.flatten())
+        observation = np.append(state_observation, activity_coords)
 
         return observation.clip(-1, 1)
 
@@ -320,11 +341,14 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
         x = np.append(nx, px)
         y = np.append(ny, py)
 
+        if x.size == 0:
+            return None
+
         x_mean, y_mean, x_var, y_var = x.mean(), y.mean(), x.var(), y.var()
 
         return x_mean, y_mean
 
-    def get_activity_coord_robust(self, img):
+    def get_activity_coord_robust(img):
         px, py = np.where(img == 0)
         nx, ny = np.where(img == 255)
         x = np.append(nx, px)
@@ -332,17 +356,15 @@ class PegInHoleRandomEventsDepthActivityCenter(gym.Env):
 
         x_mean, y_mean, x_var, y_var = x.mean(), y.mean(), x.var(), y.var()
 
-        cx1 = x < x_mean + np.sqrt(x_var)
-        cx2 = x > x_mean + np.sqrt(x_var)
-        new_x = np.where(cx1 & cx2)
+        
+        w = 1
+        new_x, = np.where((x < x_mean + w * np.sqrt(x_var)) & (x > x_mean - w * np.sqrt(x_var)))
+        new_y, = np.where((y < y_mean + w * np.sqrt(y_var)) & (y > y_mean - w * np.sqrt(y_var)))
 
-        cy1 = x < y_mean + np.sqrt(y_var)
-        cy2 = x > y_mean + np.sqrt(y_var)
-        new_y = np.where(cy1 & cy2)
+        x_mean, y_mean, x_var, y_var = new_x.mean(), new_y.mean(), new_x.var(), new_y.var()
+        print(x_mean, y_mean, x_var, y_var)
 
-        x_mean, y_mean = new_x.mean(), new_y.mean()
-
-        return x_mean, y_mean
+        return x_mean, y_mean, x_var, y_var
 
 
 

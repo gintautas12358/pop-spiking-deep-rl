@@ -53,10 +53,10 @@ class SpikeActorDeepCritic(nn.Module):
 
 
 def spike_sac(env_fn, actor_critic=SpikeActorDeepCritic, ac_kwargs=dict(), seed=0,
-              steps_per_epoch=1000, epochs=200, replay_size=int(1e6), gamma=0.99,
-              polyak=0.995, popsan_lr=1e-4, q_lr=1e-3, alpha=0.2, batch_size=100, start_steps=1000,
-              update_after=1000, update_every=1000, num_test_episodes=1, max_ep_len=1000, env_name="", render_every=10,
-              save_freq=5, norm_clip_limit=3, norm_update=50, tb_comment='', model_idx=0, use_cuda=True):
+              steps_per_epoch=10000, epochs=200, replay_size=int(1e6), gamma=0.99,
+              polyak=0.995, popsan_lr=1e-4, q_lr=1e-3, alpha=0.2, batch_size=100, start_steps=10000,
+              update_after=1000, update_every=50, num_test_episodes=1, max_ep_len=1000, env_name="", render_every=50,
+              save_freq=20, norm_clip_limit=3, norm_update=50, tb_comment='', model_idx=0, use_cuda=True):
     """
     Spike Soft Actor-Critic (SAC)
 
@@ -458,7 +458,7 @@ if __name__ == '__main__':
     parser.add_argument('--start_model_idx', type=int, default=0)
     parser.add_argument('--num_model', type=int, default=5)
     parser.add_argument('--epochs', type=int, default=200)
-    parser.add_argument('--steps_per_epoch', type=int, default=1000)
+    parser.add_argument('--steps_per_epoch', type=int, default=10000)
     parser.add_argument('--max_ep_len', type=int, default=1000)
     
     args = parser.parse_args()
@@ -479,6 +479,6 @@ if __name__ == '__main__':
         spike_sac(lambda: gym.make(args.env), actor_critic=SpikeActorDeepCritic, ac_kwargs=AC_KWARGS,
                   popsan_lr=1e-4, gamma=0.99, seed=seed, 
                   epochs=args.epochs, 
-                  steps_per_epoch=args.steps_per_epoch, max_ep_len=args.max_ep_len, env_name=args.env, render_every=50,
+                  steps_per_epoch=args.steps_per_epoch, max_ep_len=args.max_ep_len, env_name=args.env, render_every=199,
                   norm_clip_limit=3.0, tb_comment=COMMENT, model_idx=num)
 
