@@ -1,12 +1,16 @@
 import gym
 import gym_env
 
+# env = gym.make("PegInHole-test", sim_speed=1, headless=False)
 # env = gym.make("PegInHole-v0")
 # env = gym.make("PegInHole-rand")
 # env = gym.make("PegInHole-rand_events")
 # env = gym.make("PegInHole-rand_events_depth")
+# env = gym.make("PegInHole-rand_events_visual_servoing")
 
-env = gym.make("PegInHole-rand_events_visual_servoing")
+env = gym.make("PegInHole-rand_events_visual_servoing_guiding", sim_speed=1, headless=False, render_every_frame=True)
+
+
 
 
 
@@ -23,7 +27,7 @@ while not done:
     # print("obs", obs, "reward", reward, "done", done, "info", info)
     # print("obs", obs[0][6:])
 
-    # print(step)
+    print(step)
 
-    if step > 100:
-        done
+    # if step > 100:
+    #     done = True

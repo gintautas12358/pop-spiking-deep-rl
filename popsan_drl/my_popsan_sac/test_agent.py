@@ -10,10 +10,10 @@ import pickle
 from sac_cuda_norm import SpikeActorDeepCritic
 from replay_buffer_norm import ReplayBuffer
 
-param_path = "params/spike-sac_sac-popsan-PegInHole-rand-encoder-dim-10-decoder-dim-10/model4_e200.pt"
-rb_param_path = "params/spike-sac_sac-popsan-PegInHole-rand-encoder-dim-10-decoder-dim-10/replay_buffer4_e200.p"
+param_path = "params/spike-sac_sac-popsan-PegInHole-v0-encoder-dim-10-decoder-dim-10/model0_e180.pt"
+rb_param_path = "params/spike-sac_sac-popsan-PegInHole-v0-encoder-dim-10-decoder-dim-10/replay_buffer0_e180.p"
 use_cuda = True
-env_name = "PegInHole-rand"
+env_name = "PegInHole-v0"
 num_test_episodes = 10
 max_ep_len = 1000
 

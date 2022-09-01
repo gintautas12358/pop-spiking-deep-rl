@@ -395,12 +395,17 @@ def spike_sac(env_fn, actor_critic=SpikeActorDeepCritic, ac_kwargs=dict(), seed=
             o, ep_ret, ep_len = env.reset(), 0, 0
 
         # Update handling
+        # if t >= update_after and t % update_every == 0:
+        #     print("Update handling...")
+        #     for j in tqdm( range(update_every) ):
+        #         batch = replay_buffer.sample_batch(device, batch_size)
+        #         update(data=batch)
+        #     print("Update handling done!")
+
         if t >= update_after and t % update_every == 0:
-            print("Update handling...")
-            for j in tqdm( range(update_every) ):
+            for j in range(update_every):
                 batch = replay_buffer.sample_batch(device, batch_size)
                 update(data=batch)
-            print("Update handling done!")
 
         # End of epoch handling
         if (t+1) % steps_per_epoch == 0:
@@ -456,7 +461,7 @@ if __name__ == '__main__':
     parser.add_argument('--decoder_pop_dim', type=int, default=10)
     parser.add_argument('--encoder_var', type=float, default=0.15)
     parser.add_argument('--start_model_idx', type=int, default=0)
-    parser.add_argument('--num_model', type=int, default=5)
+    parser.add_argument('--num_model', type=int, default=10)
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--steps_per_epoch', type=int, default=10000)
     parser.add_argument('--max_ep_len', type=int, default=1000)
@@ -479,6 +484,6 @@ if __name__ == '__main__':
         spike_sac(lambda: gym.make(args.env), actor_critic=SpikeActorDeepCritic, ac_kwargs=AC_KWARGS,
                   popsan_lr=1e-4, gamma=0.99, seed=seed, 
                   epochs=args.epochs, 
-                  steps_per_epoch=args.steps_per_epoch, max_ep_len=args.max_ep_len, env_name=args.env, render_every=199,
+                  steps_per_epoch=args.steps_per_epoch, max_ep_len=args.max_ep_len, env_name=args.env, render_every=40,
                   norm_clip_limit=3.0, tb_comment=COMMENT, model_idx=num)
 
