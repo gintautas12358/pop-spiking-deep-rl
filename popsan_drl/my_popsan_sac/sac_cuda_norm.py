@@ -314,7 +314,7 @@ def spike_sac(env_fn, actor_critic=SpikeActorDeepCritic, ac_kwargs=dict(), seed=
 
         # height, width, layers = frame.shape
 
-        video = cv2.VideoWriter(f'{num}_{tb_comment}_epoch_{e}.avi', 0, 60, (1280,720))
+        video = cv2.VideoWriter(f'{num}_{tb_comment}_epoch_{e}.avi', 0, 60, (64,64))
 
     
         test_reward_sum = 0
@@ -464,7 +464,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_model', type=int, default=10)
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--steps_per_epoch', type=int, default=10000)
-    parser.add_argument('--max_ep_len', type=int, default=1000)
+    parser.add_argument('--max_ep_len', type=int, default=200)
     
     args = parser.parse_args()
 
@@ -484,6 +484,6 @@ if __name__ == '__main__':
         spike_sac(lambda: gym.make(args.env), actor_critic=SpikeActorDeepCritic, ac_kwargs=AC_KWARGS,
                   popsan_lr=1e-4, gamma=0.99, seed=seed, 
                   epochs=args.epochs, 
-                  steps_per_epoch=args.steps_per_epoch, max_ep_len=args.max_ep_len, env_name=args.env, render_every=40,
+                  steps_per_epoch=args.steps_per_epoch, max_ep_len=args.max_ep_len, env_name=args.env, render_every=20,
                   norm_clip_limit=3.0, tb_comment=COMMENT, model_idx=num)
 
