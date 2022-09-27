@@ -8,7 +8,11 @@ import gym_env
 # env = gym.make("PegInHole-rand_events_depth")
 # env = gym.make("PegInHole-rand_events_visual_servoing")
 
-env = gym.make("PegInHole-rand_events_visual_servoing_guiding", sim_speed=1, headless=False, render_every_frame=True)
+# env = gym.make("PegInHole-rand_events_visual_servoing_guiding", sim_speed=1, headless=False, render_every_frame=True)
+# env = gym.make("PegInHole-rand_events_visual_servoing_guiding_corner_activity", sim_speed=1, headless=False, render_every_frame=True)
+
+env = gym.make("PegInHole-rand_events_visual_servoing_guiding_vae", sim_speed=1, headless=False)
+
 
 
 
@@ -29,5 +33,7 @@ while not done:
 
     print(step)
 
-    # if step > 100:
-    #     done = True
+    if step > 100:
+        # done = True
+        obs = env.reset()
+        step = 0

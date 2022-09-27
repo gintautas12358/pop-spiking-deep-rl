@@ -15,7 +15,9 @@ import skimage.measure
 import time
 from scipy.spatial import distance_matrix
 
-class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
+from .fsvae.fsvae import FSVAE
+
+class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
 
     def __init__(self, sim_speed=32, headless=False, render_every_frame=True):
         
@@ -24,7 +26,7 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
         self.data = mujoco.MjData(self.model)
 
         # init first position
-        self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, headless=headless, render_every_frame=render_every_frame, running_events=True)
+        self.viewer = mujoco_viewer.MujocoViewer(self.model, self.data, headless=headless, render_every_frame=render_every_frame, running_events=False)
         self.controller = FullImpedanceController(self.model, self.data) 
 
         # inti esim
@@ -38,11 +40,11 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
         # in radians
         # self.data.qpos = np.array([-1.57,0,0,1.57,0,-1.57,0]) # init pose
         self.init_pose = np.array([-1.57,
-                                    -0.68,
+                                    -0.78,
                                     0,
-                                    1.85,
+                                    1.75,
                                     0.0,
-                                    -0.6,
+                                    -0.60,
                                     -1.57])
 
         self.data.qpos = self.init_pose.copy()
@@ -56,25 +58,31 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
         offset_pos[2] = 0.0                     # no offset in z
         self.set_hole_pose(offset_pos)
 
-        self.current_pose = np.array([0.0, 0.43, 0.10, 3.14, 0, 0])
+        self.current_pose = np.array([0.0, 0.53, 0.10, 3.14, 0, 0])
         # self.current_pose = np.array([0.0 ,0.6,0.10, 3.14, 0, 0])  # on top of the hole
         # self.current_pose = np.array([0.0 ,0.6,0.05, 3.14, 0, 0]) # inside the hole
         # self.goal_pose = np.array([0.0, 0.6, 0.02, 3.14, 0, 0])
 
         self.img = np.ones((32, 32)) * 127
         self.dist = 60
+ 
+        self.activity_coord = 99, 99
 
-        img_files = ["00001654.png", "00001262.png", "00001886.png", "00002562.png"]
-        index = np.random.randint(0,4)
-        img_file = img_files[index]
-        goal_img_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/goal_image/" + img_file
+        self.latent_z = np.zeros((128, 4))
 
-
-        goal_img = self.relocate_img(cv2.imread(goal_img_path), (np.random.randint(24,40), np.random.randint(24,40)), 64)
-
+        # goal as an image
+        # img_files = ["00001654.png", "00001262.png", "00001886.png", "00002562.png"]
+        # index = np.random.randint(0,4)
+        # img_file = img_files[index]
+        # goal_img_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/goal_image/" + img_file
         # self.goal_img = self.preprocessing(cv2.flip(cv2.imread(goal_img_path), 0))
-        self.goal_img = self.preprocessing(goal_img)
 
+        # just coordinate goal
+        min_c = 4
+        max_c = 29
+        self.goal_coord = np.random.randint(min_c, max_c), np.random.randint(min_c, max_c)
+
+        self.fsvae = FSVAE()
 
         
         self.err_limit = 0.0005
@@ -100,9 +108,10 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
         img_pixels = 32*32
         img_activity_coords = 2
         img_err = 1
+        vae = 128*4
         # self.image_observation_space = gym.spaces.Box(low=0, high=255, shape=img_shape, dtype=np.uint8)
 
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(position_ob + img_err,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(position_ob + vae,), dtype=np.float32)
 
         # self.observation_space = gym.spaces.Tuple([self.state_observation_space, 
         #                                         self.image_observation_space])
@@ -165,15 +174,27 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
         if out is not None:
             # print("events created")
             e_img, e, num_e = out
-            self.img  = self.preprocessing(e_img)
+            self.img  = self.preprocessing2(e_img.copy())
 
-        observation = self.observe(self.img)
+            img2 = self.preprocessing2(e_img.copy())
+            # print("debug", img2.shape)
+            recons_img, latent_z = self.fsvae.input_image(img2)
+            self.latent_z = latent_z
+
+            # cv2.imshow("recons image", recons_img)
+            # cv2.waitKey(0)
+
+
+
+        observation = self.observe()
 
         # ======== reward ==========
 
         dx = np.linalg.norm(action - self.old_a)
         self.old_a = action.copy()
-        err = self.dist_metric(self.goal_img, self.img)
+        err = self.dist_metric(self.img)
+
+        # print(err)
 
         # reward = 1/(2*err+0.001)-5*(err+0.001)-5 - 5* dx
 
@@ -214,17 +235,19 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
         self.data.qvel = self.init_qvel.copy()
 
         self.img = np.ones((32, 32)) * 127
+        self.activity_coord = 99, 99
 
-        img_files = ["00001654.png", "00001262.png", "00001886.png", "00002562.png"]
-        index = np.random.randint(0,4)
-        img_file = img_files[index]
-        goal_img_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/goal_image/" + img_file
-
-
-        goal_img = self.relocate_img(cv2.imread(goal_img_path), (np.random.randint(24,40), np.random.randint(24,40)), 64)
-
+        # goal as an image
+        # img_files = ["00001654.png", "00001262.png", "00001886.png", "00002562.png"]
+        # index = np.random.randint(0,4)
+        # img_file = img_files[index]
+        # goal_img_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/goal_image/" + img_file
         # self.goal_img = self.preprocessing(cv2.flip(cv2.imread(goal_img_path), 0))
-        self.goal_img = self.preprocessing(goal_img)
+
+        # just coordinate goal
+        min_c = 4
+        max_c = 29
+        self.goal_coord = np.random.randint(min_c, max_c), np.random.randint(min_c, max_c)
 
     def reset(self):
         self.env_reset()
@@ -240,19 +263,29 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
 
         # ======== observation ==========
 
-        observation = self.observe(self.img)
+        observation = self.observe()
 
         return observation
 
-    def observe(self, img):
+    def observe(self):
 
-        err = self.dist_metric(self.goal_img, self.img)
+        
+        # err = self.dist_metric(self.goal_img, self.img)
 
         pose = self.controller.fk()
 
-        observation = (pose[0] - self.current_pose[0]) / (self.ac_position_scale ), \
-                      (pose[1] - self.current_pose[1]) / (self.ac_position_scale ), \
-                      err / 45.0
+        
+
+        ob0 = (pose[0] - self.current_pose[0]) / (self.ac_position_scale )
+        ob1 = (pose[1] - self.current_pose[1]) / (self.ac_position_scale )
+        ob2 = self.latent_z.flatten()
+
+        # print("shape", ob2.shape)
+
+        observation = np.array([])
+        observation = np.append(observation, ob0)
+        observation = np.append(observation, ob1)
+        observation = np.append(observation, ob2)
 
         return observation
 
@@ -338,84 +371,91 @@ class PegInHoleRandomEventsVisualServoingGuiding(gym.Env):
 
         return img
 
-    def dist_metric(self, goal_img, img):
+    def preprocessing2(self, img):
+
+        img = cv2.flip(img, 0)
+
+        # size crop
+        res = 512
+        half_size = int(res / 2)
+
+        H, W, _ = img.shape
+        mid_x = int(W / 2)
+        img = img[H - res:H, mid_x-half_size:mid_x+half_size]
+
+        img = np.where(img == 50, 255, img)
+                
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        img = cv2.normalize(img,  img, 0, 255, cv2.NORM_MINMAX)
+
+        # maxpool
+        
+        for i in range(4):
+            img = skimage.measure.block_reduce(img, (2,2), np.max)
+
+        # dilate
+        grow_size = 3
+        kernel = np.ones((grow_size,grow_size), np.uint8)
+        img = cv2.dilate(img, kernel, iterations=1)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+
+        # gray background
+
+        img = np.where(img == 0, 127, img)
+        img = np.where(img == 129, 0, img)
+
+        # observe result. (debug camera view) 
+        cv2.imshow("resized image", img)
+        # cv2.waitKey(0)
+
+        return img
+
+    def dist_metric(self, img):
+        out = self.get_activity_coord(img)
+
+        # img = cv2.resize(img, (512, 512)) 
+        # cv2.imshow("seen image", img)
+        
+        x, y = self.activity_coord
+        if out is not None:
+            x, y = out
+            self.activity_coord = x, y 
+        else:
+            return -10.0
+
+        v = np.array((x, y))
+        # print("v: ", v)
+
+        # g_out = self.get_activity_coord(self.goal_img)
+        g_out = self.goal_coord 
+        g_v = np.array(g_out)
+        # print("g_v: ", g_v)
+
+        # goal_img = cv2.resize(goal_img, (512, 512)) 
+        # cv2.imshow("goal image", goal_img)
+        # cv2.waitKey(0)
+
+        err = np.linalg.norm(g_v - v)
+        
+        return err
+
+    def get_activity_coord(self, img):
         px, py = np.where(img == 0)
         nx, ny = np.where(img == 255)
         x = np.append(nx, px)
         y = np.append(ny, py)
-        c = np.append(x[:, None], y[:,None], axis=1)
+
+
+        # print("debug")
+        # print(x)
+        # print(y)
+        # print("debug end ")
 
         if x.size == 0:
-            return -10.0
-        
-        gpx, gpy = np.where(goal_img == 0)
-        gnx, gny = np.where(goal_img == 255)
-        gx = np.append(gnx, gpx)
-        gy = np.append(gny, gpy)
-        gc = np.append(gx[:, None], gy[:,None], axis=1)
-        
-        dist_mat = distance_matrix(c, gc)
-        
-        self_dist_mat = distance_matrix(gc, gc)
-        
-        dist = np.abs(dist_mat.flatten()).mean() - np.abs(self_dist_mat.flatten()).mean()
-        self.dist = dist
-        return dist
+            return None
 
+        x_mean, y_mean, x_var, y_var = x.mean(), y.mean(), x.var(), y.var()
 
-    def relocate_img(self, img, pos, res):
-        size = 10
-        # print(img.shape)
-        center_img = self.center_crop(img, size)
-        new_img = self.translate_img_from_center(center_img, pos, size, res)
-
-        return new_img
-
-    def center_crop(self, img, size):
-        half_size = int(size / 2)
-
-        positions_y, positions_x, channel = np.where(img > 0)
-        # print(positions_y, positions_x, channel)
-        min_position_x = np.min(positions_x)
-        max_position_x = np.max(positions_x)
-        min_position_y = np.min(positions_y)
-        max_position_y = np.max(positions_y)
-
-        mid_x = int((min_position_x + max_position_x) / 2)
-        mid_y = int((min_position_y + max_position_y) / 2)
-
-        # print(min_position_x, max_position_x, min_position_y, max_position_y)
-        crop_y0 = mid_y-half_size
-        crop_y1 = mid_y+half_size
-        crop_x0 = mid_x-half_size
-        crop_x1 = mid_x+half_size
-        # crop_img = img[mid_y-half_size:mid_y+half_size, mid_x-half_size:mid_x+half_size]
-        # print(crop_y0, crop_y1, crop_x0, crop_x1)
-        crop_img = img[crop_y0:crop_y1, crop_x0:crop_x1, :]
-        return crop_img
-
-    def translate_img_from_center(self, img, pos, size, res):
-        # print(img.shape)
-        half_size = int(size / 2)
-        mid_x = int(res / 2)
-        mid_y = int(res / 2)
-        new_img = np.zeros((res,res, 3))
-        x_offset = pos[0] - mid_x
-        y_offset = pos[1] - mid_y
-        # print("new", new_img.shape)
-
-        # print("bug", mid_x, half_size, mid_x-half_size, mid_x+half_size)
-
-        crop_y0 = mid_y-half_size
-        crop_y1 = mid_y+half_size
-        crop_x0 = mid_x-half_size
-        crop_x1 = mid_x+half_size
-
-        # print(crop_y0, crop_y1, crop_x0, crop_x1)
-        # print(x_offset, y_offset)
-
-        # new_img[mid_y-half_size + x_offset:mid_y+half_size + x_offset, mid_x-half_size + y_offset:mid_x+half_size + y_offset, :] = img[:,:,:]
-        new_img[crop_y0 + x_offset:crop_y1 + x_offset, crop_x0 + y_offset:crop_x1 + y_offset, :] = img[:,:,:]
-
-
-        return new_img.astype(np.uint8)
+        return x_mean, y_mean

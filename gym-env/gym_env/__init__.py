@@ -42,8 +42,19 @@ register(
     entry_point='gym_env.envs:PegInHoleRandomEventsVisualServoingGuiding',
 ) 
 
+
 register(
     id='PegInHole-rand_events_visual_servoing_guiding_activity',
     entry_point='gym_env.envs:PegInHoleRandomEventsVisualServoingGuidingActivity',
 ) 
 
+register(
+    id='PegInHole-rand_events_visual_servoing_guiding_corner_activity',
+    entry_point='gym_env.envs:PegInHoleRandomEventsVisualServoingGuidingCornerActivity',
+) 
+
+
+register(
+    id='PegInHole-rand_events_visual_servoing_guiding_vae',
+    entry_point='gym_env.envs:PegInHoleRandomEventsVisualServoingGuidingVAE',
+) 
