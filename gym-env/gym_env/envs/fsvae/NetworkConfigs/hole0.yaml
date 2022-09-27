@@ -1,0 +1,18 @@
+Network:
+  epochs: 2000
+  batch_size: 1 #250
+  n_steps: 4 # timestep
+  dataset: "hole"
+  in_channels: 1
+  data_path: "./data"
+  lr: 0.1
+  weight_decay: 0.001
+  latent_dim: 32
+  input_size: 32
+  model: "FSVAE" # FSVAE or  FSVAE_large
+  k: 20 # multiplier of channel
+  scheduled: true # whether to apply scheduled sampling
+  loss_func: 'mmd' # mmd or kld
+
+
+  
