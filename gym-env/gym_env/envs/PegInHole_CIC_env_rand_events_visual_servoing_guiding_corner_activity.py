@@ -1,3 +1,56 @@
+#
+#BSD 3-Clause License
+#
+#
+#
+#Copyright 2022 fortiss, Neuromorphic Computing group
+#
+#
+#All rights reserved.
+#
+#
+#
+#Redistribution and use in source and binary forms, with or without
+#
+#modification, are permitted provided that the following conditions are met:
+#
+#
+#
+#* Redistributions of source code must retain the above copyright notice, this
+#
+#  list of conditions and the following disclaimer.
+#
+#
+#
+#* Redistributions in binary form must reproduce the above copyright notice,
+#
+#  this list of conditions and the following disclaimer in the documentation
+#
+#  and/or other materials provided with the distribution.
+#
+#
+#
+#* Neither the name of the copyright holder nor the names of its
+#
+#  contributors may be used to endorse or promote products derived from
+#
+#  this software without specific prior written permission.
+#
+#
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#
+#IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#
+#DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#
+#FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#
+#DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#
+
 from re import X
 import mujoco
 import mujoco_viewer
@@ -68,7 +121,7 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
         # self.goal_pose = np.array([0.0, 0.6, 0.02, 3.14, 0, 0])
 
         self.img = np.ones((32, 32)) * 127
-        self.activity_coord = 99,99
+        self.activity_coord = 32,32
         self.num_e = np.zeros((1,4), dtype=np.int32)
 
         # goal as an image
@@ -113,7 +166,7 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
         img_err = 1
         # self.image_observation_space = gym.spaces.Box(low=0, high=255, shape=img_shape, dtype=np.uint8)
 
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(img_activity_coords + img_err,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(position_ob + img_err,), dtype=np.float32)
 
         # self.observation_space = gym.spaces.Tuple([self.state_observation_space, 
         #                                         self.image_observation_space])
@@ -191,7 +244,7 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
         # reward = 1/(2*err+0.001)-5*(err+0.001)-5 - 5* dx
 
 
-        reward = 1/(0.01*err+0.01) - 100* dx
+        reward = 1/(0.01*err+0.01) - 1* dx
         # print(reward)
         if self.activity_coord == (99, 99):
             reward = -1
@@ -232,7 +285,7 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
         self.hmap = HeatMap(self.w, self.h)
 
         self.img = np.ones((32, 32)) * 127
-        self.activity_coord = 99, 99
+        self.activity_coord = 32, 32
 
         # goal as an image
         # img_files = ["00001654.png", "00001262.png", "00001886.png", "00002562.png"]
@@ -265,6 +318,7 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
 
     def observe(self):
 
+
         v = self.activity_coord
         out  =  self.process_events(self.num_e)
         if out is not None:
@@ -286,12 +340,13 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
         err = np.linalg.norm(g_v - v)
         # print("error: ", err, g_v, v)
 
-        cv2.waitKey(0)
+        # cv2.waitKey(0)
 
         pose = self.controller.fk()
 
         observation = (pose[0] - self.current_pose[0]) / (self.ac_position_scale ), \
                       (pose[1] - self.current_pose[1]) / (self.ac_position_scale ), \
+                      (pose[2] - self.current_pose[2]) / (self.ac_position_scale ), \
                       err / 45.0
 
         return observation
@@ -427,10 +482,12 @@ class PegInHoleRandomEventsVisualServoingGuidingCornerActivity(gym.Env):
     def dist_metric(self, img):
         out = self.get_activity_coord(img)
         
-        x, y = self.activity_coord 
+        x, y = self.activity_coord
         if out is not None:
             x, y = out
-            self.activity_coord = out
+            self.activity_coord = x, y 
+        else:
+            x, y = self.activity_coord
 
         v = np.array((x, y))
 

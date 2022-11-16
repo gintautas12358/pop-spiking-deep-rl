@@ -68,7 +68,7 @@ class FullImpedanceController(BaseController):
         # Default stiffness and damping in cartesian space
         if stiffness is None:
             # self.stiffness = np.array([1000.0, 1000.0, 1000.0, 1000.3, 1000.3, 1000.3])
-            self.stiffness = np.array([700.0, 700.0, 700.0, 700.3, 700.3, 700.3])
+            self.stiffness = np.array([300.0, 300.0, 300.0, 300.3, 300.3, 300.3])
 
             # self.stiffness = np.array([300.0, 300.0, 300.0, 200.0, 200.0, 200.0])
             # self.stiffness = np.array([10.0, 10.0, 10.0, 10.0, 10.0, 10.0])

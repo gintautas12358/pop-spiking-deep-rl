@@ -1,3 +1,56 @@
+#
+#BSD 3-Clause License
+#
+#
+#
+#Copyright 2022 fortiss, Neuromorphic Computing group
+#
+#
+#All rights reserved.
+#
+#
+#
+#Redistribution and use in source and binary forms, with or without
+#
+#modification, are permitted provided that the following conditions are met:
+#
+#
+#
+#* Redistributions of source code must retain the above copyright notice, this
+#
+#  list of conditions and the following disclaimer.
+#
+#
+#
+#* Redistributions in binary form must reproduce the above copyright notice,
+#
+#  this list of conditions and the following disclaimer in the documentation
+#
+#  and/or other materials provided with the distribution.
+#
+#
+#
+#* Neither the name of the copyright holder nor the names of its
+#
+#  contributors may be used to endorse or promote products derived from
+#
+#  this software without specific prior written permission.
+#
+#
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#
+#IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#
+#DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#
+#FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#
+#DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#
+
 from copy import deepcopy
 import itertools
 import numpy as np
@@ -294,6 +347,7 @@ def spike_sac(env_fn, actor_critic=SpikeActorDeepCritic, ac_kwargs=dict(), seed=
         ###
         print("testing env...")
         test_reward_sum = 0
+        test_accuracy_sum = 0
         for j in tqdm( range(num_test_episodes) ):
             o, d, ep_ret, ep_len = test_env.reset(), False, 0, 0
             while not(d or (ep_len == max_ep_len)):
@@ -302,9 +356,11 @@ def spike_sac(env_fn, actor_critic=SpikeActorDeepCritic, ac_kwargs=dict(), seed=
                 ep_ret += r
                 ep_len += 1
             test_reward_sum += ep_ret
+            test_accuracy_sum += test_env.err
+
 
         print("done testing env")
-        return test_reward_sum / num_test_episodes
+        return test_reward_sum / num_test_episodes, test_accuracy_sum/num_test_episodes
 
     def render_agent(e):
         ###
@@ -431,10 +487,11 @@ def spike_sac(env_fn, actor_critic=SpikeActorDeepCritic, ac_kwargs=dict(), seed=
                 print("Weights saved in ", model_dir + '/' + "model" + str(model_idx) + "_e" + str(epoch) + '.pt')
 
             # Test the performance of the deterministic version of the agent.
-            test_mean_reward = test_agent()
+            test_mean_reward, test_mean_accuracy = test_agent()
             save_test_reward.append(test_mean_reward)
             save_test_reward_steps.append(t + 1)
             writer.add_scalar(tb_comment + '/Test-Mean-Reward', test_mean_reward, t + 1)
+            writer.add_scalar(tb_comment + '/Test-Mean-Accuracy', test_mean_accuracy, t + 1)
             print("Model: ", model_idx, " Steps: ", t + 1, " Mean Reward: ", test_mean_reward)
 
             if epoch % render_every == 0 and epoch > 0:
@@ -461,7 +518,7 @@ if __name__ == '__main__':
     parser.add_argument('--decoder_pop_dim', type=int, default=10)
     parser.add_argument('--encoder_var', type=float, default=0.15)
     parser.add_argument('--start_model_idx', type=int, default=0)
-    parser.add_argument('--num_model', type=int, default=10)
+    parser.add_argument('--num_model', type=int, default=1)
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--steps_per_epoch', type=int, default=10000)
     parser.add_argument('--max_ep_len', type=int, default=200)

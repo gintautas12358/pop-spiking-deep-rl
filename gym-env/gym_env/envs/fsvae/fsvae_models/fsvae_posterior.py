@@ -8,6 +8,8 @@ import gym_env.envs.fsvae.global_v as glv
 
 from .snn_layers import *
 
+from gym_env.envs.fsvae.global_latent_space_size import latent_dim
+
 
 class PosteriorBernoulliSTBP(nn.Module):
     def __init__(self, k=20) -> None:
@@ -16,7 +18,7 @@ class PosteriorBernoulliSTBP(nn.Module):
         """
         super().__init__()
         # self.channels = glv.network_config['latent_dim']
-        self.channels = 128
+        self.channels = latent_dim
 
         self.k = k
         # self.n_steps = glv.network_config['n_steps']

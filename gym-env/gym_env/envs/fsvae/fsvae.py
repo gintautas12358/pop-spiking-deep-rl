@@ -26,7 +26,9 @@ class FSVAE:
         self.net = fsvae.FSVAE()
 
         #load best trained fsvae model 
-        checkpoint_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/fsvae/best.pth"
+        # checkpoint_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/fsvae/best.pth"
+        checkpoint_path = "/home/palinauskas/Documents/pop-spiking-deep-rl/gym-env/gym_env/envs/fsvae/best_hole_run_0_dilated_1e-4_4_128.pth"
+        
         checkpoint = torch.load(checkpoint_path)
         self.net.load_state_dict(checkpoint)  
 

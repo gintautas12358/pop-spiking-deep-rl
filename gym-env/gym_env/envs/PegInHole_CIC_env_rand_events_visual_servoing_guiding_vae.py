@@ -1,3 +1,57 @@
+#
+#BSD 3-Clause License
+#
+#
+#
+#Copyright 2022 fortiss, Neuromorphic Computing group
+#
+#
+#All rights reserved.
+#
+#
+#
+#Redistribution and use in source and binary forms, with or without
+#
+#modification, are permitted provided that the following conditions are met:
+#
+#
+#
+#* Redistributions of source code must retain the above copyright notice, this
+#
+#  list of conditions and the following disclaimer.
+#
+#
+#
+#* Redistributions in binary form must reproduce the above copyright notice,
+#
+#  this list of conditions and the following disclaimer in the documentation
+#
+#  and/or other materials provided with the distribution.
+#
+#
+#
+#* Neither the name of the copyright holder nor the names of its
+#
+#  contributors may be used to endorse or promote products derived from
+#
+#  this software without specific prior written permission.
+#
+#
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#
+#IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#
+#DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#
+#FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#
+#DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#
+
+
 import mujoco
 import mujoco_viewer
 import os
@@ -66,7 +120,7 @@ class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
         self.img = np.ones((32, 32)) * 127
         self.dist = 60
  
-        self.activity_coord = 99, 99
+        self.activity_coord = 32, 32
 
         self.latent_z = np.zeros((128, 4))
 
@@ -97,7 +151,7 @@ class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
         acs = position_ac + orientation__ac
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(acs,), dtype=np.float32)
 
-        position_ob = 2
+        position_ob = 3
         orientation_ob = 3
         contact_force_ob = 6
         state = position_ob + orientation_ob + contact_force_ob
@@ -235,7 +289,7 @@ class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
         self.data.qvel = self.init_qvel.copy()
 
         self.img = np.ones((32, 32)) * 127
-        self.activity_coord = 99, 99
+        self.activity_coord = 32, 32
 
         # goal as an image
         # img_files = ["00001654.png", "00001262.png", "00001886.png", "00002562.png"]
@@ -274,11 +328,10 @@ class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
 
         pose = self.controller.fk()
 
-        
-
         ob0 = (pose[0] - self.current_pose[0]) / (self.ac_position_scale )
         ob1 = (pose[1] - self.current_pose[1]) / (self.ac_position_scale )
-        ob2 = self.latent_z.flatten()
+        ob2 = (pose[2] - self.current_pose[2]) / (self.ac_position_scale )
+        ob3 = self.latent_z.flatten()
 
         # print("shape", ob2.shape)
 
@@ -286,6 +339,7 @@ class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
         observation = np.append(observation, ob0)
         observation = np.append(observation, ob1)
         observation = np.append(observation, ob2)
+        observation = np.append(observation, ob3)
 
         return observation
 
@@ -423,7 +477,7 @@ class PegInHoleRandomEventsVisualServoingGuidingVAE(gym.Env):
             x, y = out
             self.activity_coord = x, y 
         else:
-            return -10.0
+            x, y = self.activity_coord
 
         v = np.array((x, y))
         # print("v: ", v)

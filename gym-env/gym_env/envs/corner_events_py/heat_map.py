@@ -18,7 +18,7 @@ class Event:
         self.t = t/1e+8
 
 class HeatMap:
-    def __init__(self, w, h, alpha=12, sigma=3, tau=18, ho=0.4) -> None:
+    def __init__(self, w, h, alpha=12, sigma=3, tau=18, ho=0.9) -> None:
         self.w = w
         self.h = h
         self.map = np.zeros((self.w, self.h),dtype=np.float32)

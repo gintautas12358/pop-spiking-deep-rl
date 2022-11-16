@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 import gym_env.envs.fsvae.global_v as glv
 
-
+from gym_env.envs.fsvae.global_latent_space_size import latent_dim
 
 class FSVAE(nn.Module):
     def __init__(self):
@@ -22,7 +22,7 @@ class FSVAE(nn.Module):
         # self.k = glv.network_config['k']
 
         in_channels = 1
-        latent_dim = 128
+        # latent_dim = 128
         self.latent_dim = latent_dim
         self.n_steps = 4
 
